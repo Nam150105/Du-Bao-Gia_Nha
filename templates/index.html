@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dự báo giá nhà</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div class="hero-content">
+        <p class="eyebrow">Machine Learning · Nhà ở &amp; căn hộ</p>
+        <h1>Dự báo giá nhà thông minh</h1>
+        <p class="subtitle">
+          Ước tính giá bán <strong>căn hộ và nhà ở</strong> dựa trên dữ liệu thị trường.
+          Hệ thống <strong>không dự báo giá đất nền</strong>.
+        </p>
+      </div>
+    </header>
+
+    <main class="layout-three">
+      <!-- Cột 1: Form nhập liệu -->
+      <div class="col col-form">
+        <section class="card form-card">
+          <h2>Thông tin nhà / căn hộ</h2>
+          <form id="predict-form">
+            <div class="field">
+              <label for="property_type">Loại nhà</label>
+              <select id="property_type" name="property_type" required>
+                {% for code, label in property_types.items() %}
+                <option value="{{ code }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+              <small>Căn hộ chung cư, nhà riêng, biệt thự, liền kề, mặt phố — không gồm đất</small>
+            </div>
+
+            <div class="field">
+              <label for="city">Khu vực / Thành phố</label>
+              <select id="city" name="city" required>
+                {% for code, label in city_options.items() %}
+                <option value="{{ code }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="grid-2">
+              <div class="field">
+                <label for="area_m2">Diện tích sử dụng (m²)</label>
+                <input type="number" id="area_m2" name="area_m2" min="15" step="0.1" placeholder="VD: 75" required>
+              </div>
+              <div class="field" id="frontage-field" hidden>
+                <label for="frontage_m">Mặt tiền (m)</label>
+                <input type="number" id="frontage_m" name="frontage_m" min="0" step="0.1" placeholder="VD: 5">
+                <!-- <small>Nhà riêng, biệt thự, liền kề, mặt phố</small> -->
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="field">
+                <label for="bedrooms">Số phòng ngủ</label>
+                <input type="number" id="bedrooms" name="bedrooms" min="0" max="6" value="2" required>
+              </div>
+              <div class="field">
+                <label for="bathrooms">Số phòng tắm</label>
+                <input type="number" id="bathrooms" name="bathrooms" min="1" max="4" value="2" required>
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="field">
+                <label for="legal_status">Pháp lý</label>
+                <select id="legal_status" name="legal_status" required>
+                  {% for code, label in legal_options.items() %}
+                  <option value="{{ code }}">{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="field">
+                <label for="furnished_status">Nội thất</label>
+                <select id="furnished_status" name="furnished_status" required>
+                  {% for code, label in furnished_options.items() %}
+                  <option value="{{ code }}">{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-primary" id="submit-btn">
+              Dự báo giá nhà
+            </button>
+          </form>
+        </section>
+      </div>
+
+      <!-- Cột 2: Dự báo + Trạng thái mô hình -->
+      <div class="col col-middle">
+        <section class="card result-card" id="result-card">
+          <div id="result-placeholder" class="result-placeholder">
+            <p class="result-label">Giá dự báo</p>
+            <p class="placeholder-text">Nhập thông tin bên trái và bấm <strong>Dự báo giá nhà</strong> để xem kết quả.</p>
+          </div>
+          <div id="result-body" hidden>
+            <p class="result-label">Giá dự báo</p>
+            <p class="result-price" id="result-price">—</p>
+            <p class="result-full" id="result-full"></p>
+
+            <div class="result-meta">
+              <div class="meta-item">
+                <span>Đơn giá / m²</span>
+                <strong id="result-unit">—</strong>
+              </div>
+              <div class="meta-item">
+                <span>Loại nhà</span>
+                <strong id="result-type">—</strong>
+              </div>
+              <div class="meta-item">
+                <span>Khu vực</span>
+                <strong id="result-city">—</strong>
+              </div>
+              <div class="meta-item">
+                <span>Diện tích</span>
+                <strong id="result-area">—</strong>
+              </div>
+              <div class="meta-item">
+                <span>Phòng ngủ / tắm</span>
+                <strong id="result-rooms">—</strong>
+              </div>
+              <div class="meta-item">
+                <span>Pháp lý</span>
+                <strong id="result-legal">—</strong>
+              </div>
+            </div>
+
+            <p class="disclaimer">
+              * Chỉ dự báo giá nhà ở &amp; căn hộ. Không áp dụng cho đất nền. Kết quả mang tính tham khảo.
+            </p>
+          </div>
+        </section>
+
+        <section class="card info-card">
+          <h3>Trạng thái mô hình</h3>
+          {% if model_ready %}
+          <p class="status ok">Mô hình đã sẵn sàng</p>
+          <ul class="metrics">
+            <li><span>Mẫu huấn luyện</span><strong>{{ "{:,}".format(metrics.samples) }}</strong></li>
+            <li><span>Độ chính xác R²</span><strong>{{ "%.2f"|format(metrics.r2 * 100) }}%</strong></li>
+          </ul>
+          {% else %}
+          <p class="status warn">Chưa có mô hình. Chạy lệnh: <code>python src/train.py</code></p>
+          {% endif %}
+        </section>
+      </div>
+
+      <!-- Cột 3: Link tham khảo -->
+      <div class="col col-links">
+        <section class="card suggestion-card">
+          <div class="reference-head">
+            <p class="result-label" id="reference-title">Tin nhà đất thị trường</p>
+            <span id="reference-count-label">—</span>
+          </div>
+          <p class="reference-subtitle" id="reference-subtitle">
+            Dòng chảy tin ngẫu nhiên từ dữ liệu — sau khi dự báo sẽ lọc theo khu vực &amp; thông số của bạn.
+          </p>
+
+          <div class="reference-panel">
+            <div id="marquee-wrap" class="reference-marquee-wrap">
+              <div id="reference-marquee" class="reference-marquee-track"></div>
+            </div>
+            <div id="matched-wrap" class="reference-list-wrap" hidden>
+              <div class="reference-list" id="reference-list"></div>
+            </div>
+          </div>
+
+          <button type="button" id="toggle-references-btn" class="btn-secondary" hidden>
+            Xem thêm
+          </button>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script type="application/json" id="city-labels-data">{{ city_options | tojson }}</script>
+  <script type="application/json" id="frontage-types-data">{{ frontage_types | tojson }}</script>
+  <script type="application/json" id="initial-references-data">{{ initial_references | tojson }}</script>
+  <script>
+    const form = document.getElementById("predict-form");
+    const toast = document.getElementById("toast");
+    const cityLabels = JSON.parse(document.getElementById("city-labels-data").textContent);
+    const frontageTypes = JSON.parse(document.getElementById("frontage-types-data").textContent);
+    const initialReferences = JSON.parse(document.getElementById("initial-references-data").textContent);
+    const propertyTypeSelect = document.getElementById("property_type");
+    const frontageField = document.getElementById("frontage-field");
+    const resultPlaceholder = document.getElementById("result-placeholder");
+    const resultBody = document.getElementById("result-body");
+    const refMarquee = document.getElementById("reference-marquee");
+    const marqueeWrap = document.getElementById("marquee-wrap");
+    const matchedWrap = document.getElementById("matched-wrap");
+    const refList = document.getElementById("reference-list");
+    const refCountLabel = document.getElementById("reference-count-label");
+    const refTitle = document.getElementById("reference-title");
+    const refSubtitle = document.getElementById("reference-subtitle");
+    const toggleReferencesBtn = document.getElementById("toggle-references-btn");
+
+    let isSubmitting = false;
+    let hasPredicted = false;
+    let isExpandedReferences = false;
+    let latestReferences = [];
+
+    function createRefFallback(domain) {
+      const fallback = document.createElement("div");
+      fallback.className = "ref-fallback";
+      fallback.textContent = (domain || "N").slice(0, 1).toUpperCase();
+      return fallback;
+    }
+
+    function listingProxySrc(listingUrl) {
+      return `/api/image-proxy?url=${encodeURIComponent(listingUrl)}`;
+    }
+
+    function buildRefMedia(ref) {
+      const media = document.createElement("div");
+      media.className = "ref-media";
+      const fallback = createRefFallback(ref.domain);
+      media.appendChild(fallback);
+
+      if (!ref.url) {
+        return media;
+      }
+
+      const img = document.createElement("img");
+      img.alt = ref.title || "Tin tham khảo";
+      img.loading = "eager";
+      img.decoding = "async";
+      img.src = listingProxySrc(ref.url);
+      img.onload = () => {
+        fallback.remove();
+      };
+      img.onerror = () => {
+        img.remove();
+      };
+      media.appendChild(img);
+      return media;
+    }
+
+    function toggleFrontageField() {
+      const showFrontage = frontageTypes.includes(propertyTypeSelect.value);
+      frontageField.hidden = !showFrontage;
+      if (!showFrontage) {
+        form.elements.frontage_m.value = "";
+      }
+    }
+
+    propertyTypeSelect.addEventListener("change", toggleFrontageField);
+    toggleFrontageField();
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.hidden = false;
+      setTimeout(() => { toast.hidden = true; }, 3500);
+    }
+
+    function buildRefCard(ref, index) {
+      const item = document.createElement("article");
+      item.className = "ref-item";
+
+      const a = document.createElement("a");
+      a.className = "ref-link";
+      a.href = ref.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+
+      const media = buildRefMedia(ref);
+
+      const content = document.createElement("div");
+      content.className = "ref-content";
+      const title = document.createElement("h4");
+      title.className = "ref-title";
+      title.textContent = index != null ? `${index + 1}. ${ref.title || "Tin tham khảo"}` : (ref.title || "Tin tham khảo");
+      const meta = document.createElement("p");
+      meta.className = "ref-meta";
+      meta.textContent = `${ref.price_short || "N/A"} · ${ref.area_m2 || "?"} m² · ${ref.city || ""}`;
+      const source = document.createElement("span");
+      source.className = "ref-source";
+      source.textContent = ref.domain || "Nguồn đăng tin";
+
+      content.appendChild(title);
+      content.appendChild(meta);
+      content.appendChild(source);
+      a.appendChild(media);
+      a.appendChild(content);
+      item.appendChild(a);
+      return item;
+    }
+
+    function renderMarquee(refs) {
+      hasPredicted = false;
+      marqueeWrap.hidden = false;
+      matchedWrap.hidden = true;
+      toggleReferencesBtn.hidden = true;
+      refTitle.textContent = "Tin nhà đất thị trường";
+      refSubtitle.textContent = "";
+      refCountLabel.textContent = "";
+
+      refMarquee.innerHTML = "";
+      if (!refs.length) {
+        refMarquee.innerHTML = "<p class='ref-empty'>Chưa có dữ liệu tin đăng.</p>";
+        return;
+      }
+
+      const trackInner = document.createElement("div");
+      trackInner.className = "reference-marquee-inner";
+      const seenUrls = new Set();
+      const uniqueRefs = refs.filter((ref) => {
+        if (!ref.url || seenUrls.has(ref.url)) return false;
+        seenUrls.add(ref.url);
+        return true;
+      });
+      const doubled = uniqueRefs.concat(uniqueRefs);
+      doubled.forEach((ref) => trackInner.appendChild(buildRefCard(ref, null)));
+      refMarquee.appendChild(trackInner);
+    }
+
+    function renderMatchedReferences(refs, expanded = false) {
+      hasPredicted = true;
+      marqueeWrap.hidden = true;
+      matchedWrap.hidden = false;
+      refTitle.textContent = "Tin tham khảo tương tự";
+      refSubtitle.textContent = "Cùng khu vực bạn chọn, thông số gần với căn nhà vừa dự báo.";
+
+      refList.innerHTML = "";
+      const maxItems = expanded ? 10 : 3;
+      const items = refs.slice(0, maxItems);
+      refCountLabel.textContent = `${String(items.length).padStart(2, "0")} / 10`;
+
+      if (!items.length) {
+        const empty = document.createElement("p");
+        empty.className = "ref-empty";
+        empty.textContent = "Chưa tìm thấy tin tương tự trong khu vực này.";
+        refList.appendChild(empty);
+        toggleReferencesBtn.hidden = true;
+        return;
+      }
+
+      items.forEach((ref, index) => refList.appendChild(buildRefCard(ref, index)));
+
+      if (refs.length > 3) {
+        toggleReferencesBtn.hidden = false;
+        toggleReferencesBtn.textContent = expanded ? "Thu gọn" : "Xem thêm";
+      } else {
+        toggleReferencesBtn.hidden = true;
+      }
+    }
+
+    toggleReferencesBtn.addEventListener("click", () => {
+      isExpandedReferences = !isExpandedReferences;
+      renderMatchedReferences(latestReferences, isExpandedReferences);
+    });
+
+    renderMarquee(Array.isArray(initialReferences) ? initialReferences : []);
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (isSubmitting) return;
+      isSubmitting = true;
+      const btn = document.getElementById("submit-btn");
+      btn.disabled = true;
+      btn.textContent = "Đang tính toán...";
+
+      const payload = {
+        property_type: form.elements.property_type.value,
+        city: form.elements.city.value,
+        area_m2: form.elements.area_m2.value,
+        bedrooms: form.elements.bedrooms.value,
+        bathrooms: form.elements.bathrooms.value,
+        legal_status: form.elements.legal_status.value,
+        furnished_status: form.elements.furnished_status.value,
+        frontage_m: form.elements.frontage_m.value || 0,
+      };
+
+      try {
+        const response = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+
+        if (!data.success) {
+          showToast(data.error || "Không thể dự báo giá.");
+          return;
+        }
+
+        const r = data.result;
+        resultPlaceholder.hidden = true;
+        resultBody.hidden = false;
+        document.getElementById("result-price").textContent = r.predicted_price_short;
+        document.getElementById("result-full").textContent = r.predicted_price_full;
+        document.getElementById("result-unit").textContent = r.unit_price_short + " / m²";
+        document.getElementById("result-type").textContent = r.inputs.property_type;
+        document.getElementById("result-city").textContent = cityLabels[r.inputs.city] || r.inputs.city;
+        document.getElementById("result-area").textContent = r.inputs.area_m2 + " m²";
+        document.getElementById("result-rooms").textContent =
+          r.inputs.bedrooms + " PN · " + r.inputs.bathrooms + " WC";
+        document.getElementById("result-legal").textContent = r.inputs.legal_status;
+
+        latestReferences = Array.isArray(r.references) ? r.references.slice(0, 10) : [];
+        isExpandedReferences = false;
+        renderMatchedReferences(latestReferences, false);
+      } catch (error) {
+        showToast("Lỗi kết nối. Vui lòng thử lại.");
+      } finally {
+        isSubmitting = false;
+        btn.disabled = false;
+        btn.textContent = "Dự báo giá nhà";
+      }
+    });
+  </script>
+</body>
+</html>

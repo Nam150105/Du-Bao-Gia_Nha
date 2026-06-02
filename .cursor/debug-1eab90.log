@@ -1,0 +1,57 @@
+{"sessionId":"1eab90","location":"index.html:submit","message":"payload built","data":{"payload":{"property_type":"Nhà riêng","city":"HN","area_m2":"33","bedrooms":"2"},"dotAccess":{"property_type":"Nhà riêng","city":"HN","area_m2":"33","bedrooms":"2"}},"hypothesisId":"H1","timestamp":1780366135604,"runId":"pre-fix"}
+{"sessionId":"1eab90","location":"index.html:response","message":"predict response","data":{"status":200,"ok":true,"success":true,"hasResult":true,"error":null},"hypothesisId":"H3","timestamp":1780366135655,"runId":"pre-fix"}
+{"sessionId":"1eab90","location":"index.html:success","message":"result rendered","data":{"hidden":false,"priceShort":"6.78 tỷ"},"hypothesisId":"H4","timestamp":1780366135656,"runId":"pre-fix"}
+{"sessionId":"1eab90","location":"index.html:submit","message":"payload built","data":{"payload":{"property_type":"Nhà riêng","city":"HN","area_m2":"33","bedrooms":"2"},"dotAccess":{"property_type":"Nhà riêng","city":"HN","area_m2":"33","bedrooms":"2"}},"hypothesisId":"H1","timestamp":1780366136219,"runId":"pre-fix"}
+{"sessionId":"1eab90","location":"index.html:response","message":"predict response","data":{"status":200,"ok":true,"success":true,"hasResult":true,"error":null},"hypothesisId":"H3","timestamp":1780366136247,"runId":"pre-fix"}
+{"sessionId":"1eab90","location":"index.html:success","message":"result rendered","data":{"hidden":false,"priceShort":"6.78 tỷ"},"hypothesisId":"H4","timestamp":1780366136249,"runId":"pre-fix"}
+{"sessionId":"1eab90","location":"index.html:submit","message":"payload built","data":{"payload":{"property_type":"Nhà riêng","city":"HN","area_m2":"33","bedrooms":"2"},"dotAccess":{"property_type":"Nhà riêng","city":"HN","area_m2":"33","bedrooms":"2"}},"hypothesisId":"H1","timestamp":1780366136402,"runId":"pre-fix"}
+{"sessionId":"1eab90","location":"index.html:response","message":"predict response","data":{"status":200,"ok":true,"success":true,"hasResult":true,"error":null},"hypothesisId":"H3","timestamp":1780366136424,"runId":"pre-fix"}
+{"sessionId":"1eab90","location":"index.html:success","message":"result rendered","data":{"hidden":false,"priceShort":"6.78 tỷ"},"hypothesisId":"H4","timestamp":1780366136425,"runId":"pre-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"nhadat24h.net"},"timestamp":1780399203460,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"nhadat24h.net"},"timestamp":1780399203461,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load fail","data":{"domain":"nhatot.com"},"timestamp":1780399203561,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load fail","data":{"domain":"nhatot.com"},"timestamp":1780399203562,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"nhadatvui.vn"},"timestamp":1780399203593,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"nhadatvui.vn"},"timestamp":1780399203594,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399203612,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399203613,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load fail","data":{"domain":"nhatot.com"},"timestamp":1780399203662,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load fail","data":{"domain":"nhatot.com"},"timestamp":1780399203663,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399203663,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399203664,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399203679,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399203679,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399203731,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399203732,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399204155,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399204156,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399204503,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399204504,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399204669,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399204669,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399205129,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399205129,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"bannha888.com"},"timestamp":1780399205201,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"bannha888.com"},"timestamp":1780399205202,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399205261,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399205262,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load fail","data":{"domain":"nhatot.com"},"timestamp":1780399205348,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load fail","data":{"domain":"nhatot.com"},"timestamp":1780399205349,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399205858,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399205859,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399205988,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399205989,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load fail","data":{"domain":"guland.vn"},"timestamp":1780399206268,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load fail","data":{"domain":"guland.vn"},"timestamp":1780399206269,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"bannha888.com"},"timestamp":1780399206382,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"bannha888.com"},"timestamp":1780399206382,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399206860,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399206861,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load fail","data":{"domain":"guland.vn"},"timestamp":1780399208619,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load fail","data":{"domain":"guland.vn"},"timestamp":1780399208620,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399208776,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load ok","data":{"domain":"guland.vn"},"timestamp":1780399208776,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load fail","data":{"domain":"guland.vn"},"timestamp":1780399209357,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load fail","data":{"domain":"guland.vn"},"timestamp":1780399209358,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load fail","data":{"domain":"guland.vn"},"timestamp":1780399211237,"hypothesisId":"H-lazy","runId":"post-fix"}
+{"sessionId":"1eab90","location":"index.html:img","message":"load fail","data":{"domain":"guland.vn"},"timestamp":1780399211237,"hypothesisId":"H-lazy","runId":"post-fix"}
