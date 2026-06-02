@@ -13,8 +13,8 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from predict import predict_price
 
+from regions import REGION_GROUPS, REGION_OPTIONS
 from utils import (
-    CITY_OPTIONS,
     FRONTAGE_TYPES,
     FURNISHED_OPTIONS,
     LEGAL_OPTIONS,
@@ -54,7 +54,8 @@ def index():
         "index.html",
         property_types=PROPERTY_TYPES,
         frontage_types=list(FRONTAGE_TYPES),
-        city_options=CITY_OPTIONS,
+        region_groups=REGION_GROUPS,
+        region_options=REGION_OPTIONS,
         legal_options=LEGAL_OPTIONS,
         furnished_options=FURNISHED_OPTIONS,
         model_ready=model_info["ready"],

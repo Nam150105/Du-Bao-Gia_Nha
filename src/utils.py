@@ -40,26 +40,17 @@ LAND_TITLE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-CITY_OPTIONS = {
-    "HCM": "Hồ Chí Minh",
-    "HN": "Hà Nội",
-    "DN": "Đà Nẵng",
-    "BD": "Bình Dương",
-    "HY": "Hưng Yên",
-    "HNA": "Hà Nam",
-    "DNai": "Đồng Nai",
-    "Khac": "Khác",
-}
+from regions import (
+    REGION_GROUPS,
+    REGION_OPTIONS,
+    extract_region_code,
+    region_display_name,
+)
 
-PROVINCE_TO_CITY = {
-    "Hồ Chí Minh": "HCM",
-    "Thành phố Hồ Chí Minh": "HCM",
-    "Hà Nội": "HN",
-    "Đà Nẵng": "DN",
-    "Bình Dương": "BD",
-    "Hưng Yên": "HY",
-    "Hà Nam": "HNA",
-    "Đồng Nai": "DNai",
+# Giữ tên cũ cho tương thích; gồm 34 tỉnh/thành + mã khac khi không map được
+CITY_OPTIONS: dict[str, str] = {
+    **REGION_OPTIONS,
+    "khac": "Khác / chưa xác định",
 }
 
 LEGAL_OPTIONS = {
@@ -109,15 +100,7 @@ NUM_FEATURES = [
 
 
 def extract_city(province: str | float, address: str | float = "") -> str:
-    if pd.notna(province):
-        key = str(province).strip()
-        if key in PROVINCE_TO_CITY:
-            return PROVINCE_TO_CITY[key]
-    text = str(address) if pd.notna(address) else ""
-    for code, name in CITY_OPTIONS.items():
-        if code != "Khac" and name in text:
-            return code
-    return "Khac"
+    return extract_region_code(province, address)
 
 
 def is_land_listing(row: pd.Series) -> bool:
@@ -527,7 +510,7 @@ def reference_item_to_display(item: dict) -> dict:
         "url": url,
         "price_short": format_vnd(price) if price > 0 else "—",
         "area_m2": float(item.get("area_m2", 0) or 0),
-        "city": CITY_OPTIONS.get(str(item.get("city", "")), str(item.get("city", ""))),
+        "city": region_display_name(str(item.get("city", ""))),
         "domain": urlparse(url).netloc.replace("www.", "") if url else "",
         "image_url": image_url,
     }
@@ -578,12 +561,20 @@ def build_reference_pool(df: pd.DataFrame, max_per_group: int = 220) -> list[dic
     return out.to_dict("records")
 
 
+def _one_hot_encoder() -> OneHotEncoder:
+    """HistGradientBoosting cần ma trận dày; sklearn mới mặc định sparse."""
+    try:
+        return OneHotEncoder(handle_unknown="ignore", sparse_output=False)
+    except TypeError:
+        return OneHotEncoder(handle_unknown="ignore", sparse=False)
+
+
 def build_pipeline() -> TransformedTargetRegressor:
     preprocessor = ColumnTransformer(
         transformers=[
             (
                 "cat",
-                OneHotEncoder(handle_unknown="ignore"),
+                _one_hot_encoder(),
                 CAT_FEATURES,
             ),
             ("num", "passthrough", NUM_FEATURES),

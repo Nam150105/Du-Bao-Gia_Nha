@@ -35,13 +35,26 @@
               <small>Căn hộ chung cư, nhà riêng, biệt thự, liền kề, mặt phố — không gồm đất</small>
             </div>
 
-            <div class="field">
-              <label for="city">Khu vực / Thành phố</label>
-              <select id="city" name="city" required>
-                {% for code, label in city_options.items() %}
-                <option value="{{ code }}">{{ label }}</option>
-                {% endfor %}
-              </select>
+            <div class="field region-field">
+              <label for="city-input">Khu vực / Tỉnh thành</label>
+              <div class="combobox" id="city-combobox">
+                <input
+                  type="text"
+                  id="city-input"
+                  class="combobox-input"
+                  autocomplete="off"
+                  placeholder="Gõ để tìm: Hà Nội, Đà Nẵng…"
+                  aria-autocomplete="list"
+                  aria-controls="city-panel"
+                  aria-expanded="false"
+                  role="combobox"
+                >
+                <input type="hidden" id="city" name="city" value="tp_ho_chi_minh" required>
+                <div class="combobox-panel" id="city-panel" role="listbox" hidden>
+                  <div class="combobox-scroll" id="city-list"></div>
+                </div>
+              </div>
+              <!-- <small>34 tỉnh, thành — gõ vài ký tự để tìm và chọn</small> -->
             </div>
 
             <div class="grid-2">
@@ -182,13 +195,13 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script type="application/json" id="city-labels-data">{{ city_options | tojson }}</script>
+  <script type="application/json" id="region-groups-data">{{ region_groups | tojson }}</script>
   <script type="application/json" id="frontage-types-data">{{ frontage_types | tojson }}</script>
   <script type="application/json" id="initial-references-data">{{ initial_references | tojson }}</script>
   <script>
     const form = document.getElementById("predict-form");
     const toast = document.getElementById("toast");
-    const cityLabels = JSON.parse(document.getElementById("city-labels-data").textContent);
+    const regionGroups = JSON.parse(document.getElementById("region-groups-data").textContent);
     const frontageTypes = JSON.parse(document.getElementById("frontage-types-data").textContent);
     const initialReferences = JSON.parse(document.getElementById("initial-references-data").textContent);
     const propertyTypeSelect = document.getElementById("property_type");
@@ -208,6 +221,122 @@
     let hasPredicted = false;
     let isExpandedReferences = false;
     let latestReferences = [];
+
+    const cityInput = document.getElementById("city-input");
+    const cityHidden = document.getElementById("city");
+    const cityPanel = document.getElementById("city-panel");
+    const cityList = document.getElementById("city-list");
+    const cityCombobox = document.getElementById("city-combobox");
+
+    const allRegions = regionGroups.flatMap((g) =>
+      g.options.map((o) => ({ ...o, group: g.label }))
+    );
+
+    function stripAccents(text) {
+      return text
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+    }
+
+    function regionLabel(code) {
+      const hit = allRegions.find((r) => r.code === code);
+      return hit ? hit.name : code;
+    }
+
+    function setRegion(code, label) {
+      cityHidden.value = code;
+      cityInput.value = label || regionLabel(code);
+    }
+
+    function renderRegionList(query = "") {
+      const q = stripAccents(query.trim());
+      cityList.innerHTML = "";
+      let count = 0;
+
+      regionGroups.forEach((group) => {
+        const items = group.options.filter((opt) => {
+          if (!q) return true;
+          const hay = stripAccents(`${opt.name} ${opt.code}`);
+          return hay.includes(q);
+        });
+        if (!items.length) return;
+
+        if (group.label) {
+          const heading = document.createElement("div");
+          heading.className = "combobox-group-label";
+          heading.textContent = group.label;
+          cityList.appendChild(heading);
+        }
+
+        items.forEach((opt) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "combobox-option";
+          btn.role = "option";
+          btn.dataset.code = opt.code;
+          btn.textContent = opt.name;
+          if (opt.code === cityHidden.value) {
+            btn.classList.add("is-active");
+            btn.setAttribute("aria-selected", "true");
+          }
+          btn.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            setRegion(opt.code, opt.name);
+            closeRegionPanel();
+          });
+          cityList.appendChild(btn);
+          count += 1;
+        });
+      });
+
+      if (!count) {
+        const empty = document.createElement("p");
+        empty.className = "combobox-empty";
+        empty.textContent = "Không tìm thấy tỉnh/thành phù hợp.";
+        cityList.appendChild(empty);
+      }
+    }
+
+    function openRegionPanel() {
+      const rect = cityInput.getBoundingClientRect();
+      cityPanel.style.position = "fixed";
+      cityPanel.style.top = `${rect.bottom + 4}px`;
+      cityPanel.style.left = `${rect.left}px`;
+      cityPanel.style.width = `${rect.width}px`;
+      cityPanel.hidden = false;
+      cityInput.setAttribute("aria-expanded", "true");
+      renderRegionList(cityInput.value);
+    }
+
+    function closeRegionPanel() {
+      cityPanel.hidden = true;
+      cityInput.setAttribute("aria-expanded", "false");
+      cityPanel.style.position = "";
+      cityPanel.style.top = "";
+      cityPanel.style.left = "";
+      cityPanel.style.width = "";
+      const selected = allRegions.find((r) => r.code === cityHidden.value);
+      if (selected) cityInput.value = selected.name;
+    }
+
+    setRegion("tp_ho_chi_minh", regionLabel("tp_ho_chi_minh"));
+
+    cityInput.addEventListener("focus", openRegionPanel);
+    cityInput.addEventListener("input", () => {
+      openRegionPanel();
+      renderRegionList(cityInput.value);
+    });
+    cityInput.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeRegionPanel();
+        cityInput.blur();
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!cityCombobox.contains(e.target)) closeRegionPanel();
+    });
 
     function createRefFallback(domain) {
       const fallback = document.createElement("div");
@@ -364,6 +493,11 @@
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (isSubmitting) return;
+      if (!cityHidden.value) {
+        showToast("Vui lòng chọn tỉnh/thành từ danh sách gợi ý.");
+        cityInput.focus();
+        return;
+      }
       isSubmitting = true;
       const btn = document.getElementById("submit-btn");
       btn.disabled = true;
@@ -400,7 +534,7 @@
         document.getElementById("result-full").textContent = r.predicted_price_full;
         document.getElementById("result-unit").textContent = r.unit_price_short + " / m²";
         document.getElementById("result-type").textContent = r.inputs.property_type;
-        document.getElementById("result-city").textContent = cityLabels[r.inputs.city] || r.inputs.city;
+        document.getElementById("result-city").textContent = r.inputs.city;
         document.getElementById("result-area").textContent = r.inputs.area_m2 + " m²";
         document.getElementById("result-rooms").textContent =
           r.inputs.bedrooms + " PN · " + r.inputs.bathrooms + " WC";

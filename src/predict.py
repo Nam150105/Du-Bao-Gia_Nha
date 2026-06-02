@@ -7,8 +7,8 @@ from urllib.parse import urlparse
 
 import pandas as pd
 
+from regions import region_display_name, resolve_city_for_model
 from utils import (
-    CITY_OPTIONS,
     FURNISHED_FLOOR,
     FURNISHED_ORDINAL,
     FURNISHED_OPTIONS,
@@ -113,8 +113,7 @@ def predict_price(
 
     property_type = normalize_property_type(property_type)
 
-    if city not in bundle["city_options"]:
-        raise ValueError(f"Khu vực không hợp lệ: {city}")
+    city = resolve_city_for_model(city, bundle["city_options"])
 
     legal_status = legal_status.strip() or "unknown"
     furnished_status = furnished_status.strip() or "unknown"
@@ -226,7 +225,8 @@ def predict_price(
         "references": references,
         "inputs": {
             "property_type": PROPERTY_TYPES[property_type],
-            "city": city,
+            "city": region_display_name(city),
+            "city_code": city,
             "area_m2": area_m2,
             "bedrooms": bedrooms,
             "bathrooms": bathrooms,
@@ -242,7 +242,7 @@ def predict_price(
 if __name__ == "__main__":
     low = predict_price(
         property_type="can_ho_chung_cu",
-        city="HCM",
+        city="tp_ho_chi_minh",
         area_m2=80,
         bedrooms=2,
         bathrooms=2,
@@ -251,7 +251,7 @@ if __name__ == "__main__":
     )
     high = predict_price(
         property_type="nha_mat_pho",
-        city="HCM",
+        city="tp_ho_chi_minh",
         area_m2=80,
         bedrooms=4,
         bathrooms=3,
