@@ -68,7 +68,7 @@ body {
   max-width: 720px;
   line-height: 1.5;
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1.95rem;
 }
 
 /* 3 cột chính */
@@ -322,7 +322,7 @@ select:focus {
 .result-label {
   color: var(--muted);
   margin: 0 0 4px;
-  font-size: 0.85rem;
+  font-size: 2.85rem;
 }
 
 .result-price {
@@ -394,7 +394,7 @@ select:focus {
 .reference-subtitle {
   margin: 0;
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: .8rem;
   line-height: 1.4;
   flex-shrink: 0;
 }
