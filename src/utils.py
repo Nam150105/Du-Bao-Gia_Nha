@@ -21,6 +21,7 @@ from sklearn.preprocessing import OneHotEncoder
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_PATH = PROJECT_ROOT / "data" / "house_data.csv"
 MODEL_PATH = PROJECT_ROOT / "models" / "house_price_model.pkl"
+DEFAULT_CITY = "ha_noi"
 
 PROPERTY_TYPES: dict[str, str] = {
     "can_ho_chung_cu": "Căn hộ chung cư",
@@ -505,6 +506,13 @@ def reference_item_to_display(item: dict) -> dict:
     price = float(item.get("price_vnd", 0) or 0)
     cached_image = item.get("image_url")
     image_url = cached_image if cached_image else None
+    lat = item.get("lat")
+    lng = item.get("lng")
+    try:
+        lat = float(lat) if lat is not None and pd.notna(lat) else None
+        lng = float(lng) if lng is not None and pd.notna(lng) else None
+    except (TypeError, ValueError):
+        lat, lng = None, None
     return {
         "title": str(item.get("title", "Bất động sản tham khảo")).strip()[:140],
         "url": url,
@@ -513,6 +521,8 @@ def reference_item_to_display(item: dict) -> dict:
         "city": region_display_name(str(item.get("city", ""))),
         "domain": urlparse(url).netloc.replace("www.", "") if url else "",
         "image_url": image_url,
+        "lat": lat,
+        "lng": lng,
     }
 
 
@@ -544,7 +554,10 @@ def build_reference_pool(df: pd.DataFrame, max_per_group: int = 220) -> list[dic
         "bathrooms",
         "legal_status",
         "furnished_status",
+        "lat",
+        "lng",
     ]
+    cols = [c for c in cols if c in df.columns]
     ref = df[cols].copy()
     ref["source_url"] = ref["source_url"].astype(str).str.strip()
     ref = ref[ref["source_url"].str.startswith("http")]
@@ -656,6 +669,159 @@ def train_model(
         model_path,
     )
     return metrics
+
+
+GEO_INDEX_COLUMNS = [
+    "city",
+    "property_type",
+    "lat",
+    "lng",
+    "title",
+    "price_vnd",
+    "area_m2",
+    "bedrooms",
+    "source_url",
+]
+
+CITY_MAP_CENTERS: dict[str, tuple[float, float]] = {
+    "ha_noi": (21.0285, 105.8542),
+    "tp_ho_chi_minh": (10.7769, 106.7009),
+    "hai_phong": (20.8449, 106.6881),
+    "hue": (16.4637, 107.5909),
+    "da_nang": (16.0544, 108.2022),
+    "can_tho": (10.0452, 105.7469),
+    "dong_nai": (10.9574, 106.8426),
+    "binh_duong": (11.3254, 106.4774),
+    "khanh_hoa": (12.2388, 109.1967),
+    "lam_dong": (11.9404, 108.4583),
+    "quang_ninh": (21.0064, 107.2925),
+    "nghe_an": (18.6796, 105.6813),
+    "thanh_hoa": (19.8067, 105.7852),
+    "bac_ninh": (21.1861, 106.0763),
+}
+
+
+@lru_cache(maxsize=1)
+def _get_geo_index() -> pd.DataFrame:
+    """Chỉ mục tọa độ nhẹ từ CSV — cache trong bộ nhớ sau lần đọc đầu."""
+    raw = load_raw_data()
+    data = raw[~raw.apply(is_land_listing, axis=1)].copy()
+    data["city"] = data.apply(
+        lambda r: extract_city(r.get("province"), r.get("address")), axis=1
+    )
+    data["property_type"] = data.apply(infer_property_type, axis=1)
+
+    for col in ("lat", "lng", "price_vnd", "area_m2", "bedrooms"):
+        if col in data.columns:
+            data[col] = pd.to_numeric(data[col], errors="coerce")
+
+    data = data.dropna(subset=["lat", "lng", "price_vnd", "area_m2"])
+    data = data[
+        (data["lat"].between(8.0, 24.0))
+        & (data["lng"].between(102.0, 110.5))
+        & (data["price_vnd"] >= 300_000_000)
+        & (data["area_m2"] >= 15)
+    ]
+
+    keep = [c for c in GEO_INDEX_COLUMNS if c in data.columns]
+    return data[keep].reset_index(drop=True)
+
+
+def get_map_points(
+    city: str,
+    property_type: str | None = None,
+    limit: int = 400,
+    show_all: bool = False,
+    highlight_urls: list[str] | None = None,
+) -> dict:
+    """Lấy điểm bản đồ theo khu vực; có thể trả toàn bộ hoặc mẫu giới hạn."""
+    from regions import resolve_city_for_model
+
+    city = resolve_city_for_model(city, CITY_OPTIONS)
+    if not show_all:
+        limit = max(10, min(int(limit), 800))
+    df = _get_geo_index()
+    subset = df[df["city"] == city]
+    if property_type:
+        try:
+            ptype = normalize_property_type(property_type)
+            typed = subset[subset["property_type"] == ptype]
+            if len(typed) >= 20:
+                subset = typed
+        except ValueError:
+            pass
+
+    highlight_set = {
+        u.strip()
+        for u in (highlight_urls or [])
+        if isinstance(u, str) and u.strip().startswith("http")
+    }
+
+    if show_all:
+        picked = subset
+    else:
+        highlighted = pd.DataFrame()
+        if highlight_set and "source_url" in subset.columns:
+            highlighted = subset[subset["source_url"].astype(str).isin(highlight_set)]
+
+        remaining = subset
+        if not highlighted.empty:
+            remaining = subset[~subset["source_url"].astype(str).isin(highlight_set)]
+
+        sample_size = max(0, limit - len(highlighted))
+        if len(remaining) > sample_size:
+            remaining = remaining.sample(sample_size, random_state=42)
+
+        picked = pd.concat([highlighted, remaining], ignore_index=True)
+    if picked.empty:
+        center = CITY_MAP_CENTERS.get(city, (16.0, 107.0))
+        return {
+            "city": city,
+            "city_label": region_display_name(city),
+            "total_in_city": 0,
+            "shown": 0,
+            "center": {"lat": center[0], "lng": center[1]},
+            "bounds": None,
+            "points": [],
+        }
+
+    points: list[dict] = []
+    for row in picked.itertuples(index=False):
+        url = str(getattr(row, "source_url", "") or "").strip()
+        price = float(getattr(row, "price_vnd", 0) or 0)
+        points.append(
+            {
+                "lat": float(row.lat),
+                "lng": float(row.lng),
+                "title": str(getattr(row, "title", "")).strip()[:120],
+                "price_short": format_vnd(price) if price > 0 else "—",
+                "area_m2": float(getattr(row, "area_m2", 0) or 0),
+                "url": url,
+                "highlight": url in highlight_set,
+            }
+        )
+
+    lats = [p["lat"] for p in points]
+    lngs = [p["lng"] for p in points]
+    center = CITY_MAP_CENTERS.get(
+        city,
+        (float(sum(lats) / len(lats)), float(sum(lngs) / len(lngs))),
+    )
+
+    return {
+        "city": city,
+        "city_label": region_display_name(city),
+        "total_in_city": int(len(subset)),
+        "shown": len(points),
+        "center": {"lat": center[0], "lng": center[1]},
+        "bounds": {
+            "south": min(lats),
+            "north": max(lats),
+            "west": min(lngs),
+            "east": max(lngs),
+        },
+        "points": points,
+    }
 
 
 def load_model(model_path: Path | None = None) -> dict:

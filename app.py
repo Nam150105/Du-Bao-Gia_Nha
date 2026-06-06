@@ -15,11 +15,13 @@ from predict import predict_price
 
 from regions import REGION_GROUPS, REGION_OPTIONS
 from utils import (
+    DEFAULT_CITY,
     FRONTAGE_TYPES,
     FURNISHED_OPTIONS,
     LEGAL_OPTIONS,
     MODEL_PATH,
     PROPERTY_TYPES,
+    get_map_points,
     get_random_references,
     load_model,
     proxy_listing_image_bytes,
@@ -39,12 +41,16 @@ def get_model_info() -> dict:
         return {"ready": False, "metrics": {}}
 
 
-def get_initial_references(limit: int = 24) -> list[dict]:
+def get_initial_references(limit: int = 24, city: str = DEFAULT_CITY) -> list[dict]:
     try:
         bundle = load_model()
     except FileNotFoundError:
         return []
-    return get_random_references(bundle.get("reference_pool", []), limit=limit)
+    pool = bundle.get("reference_pool", [])
+    city_pool = [x for x in pool if x.get("city") == city]
+    if city_pool:
+        pool = city_pool
+    return get_random_references(pool, limit=limit)
 
 
 @app.route("/")
@@ -60,7 +66,9 @@ def index():
         furnished_options=FURNISHED_OPTIONS,
         model_ready=model_info["ready"],
         metrics=model_info["metrics"],
-        initial_references=get_initial_references(limit=24),
+        initial_references=get_initial_references(limit=24, city=DEFAULT_CITY),
+        default_city=DEFAULT_CITY,
+        default_city_label=REGION_OPTIONS.get(DEFAULT_CITY, "Hà Nội"),
     )
 
 
@@ -109,6 +117,32 @@ def image_proxy():
         mimetype=content_type,
         headers={"Cache-Control": "public, max-age=3600"},
     )
+
+
+@app.route("/api/map/points")
+def map_points():
+    city = request.args.get("city", DEFAULT_CITY).strip()
+    property_type = request.args.get("property_type", "").strip() or None
+    show_all = request.args.get("all", "").strip().lower() in {"1", "true", "yes"}
+    try:
+        limit = int(request.args.get("limit", 400))
+    except (TypeError, ValueError):
+        limit = 400
+    highlight_raw = request.args.get("highlight_urls", "")
+    highlight_urls = [u.strip() for u in highlight_raw.split(",") if u.strip()]
+    try:
+        payload = get_map_points(
+            city=city,
+            property_type=property_type,
+            limit=limit,
+            show_all=show_all,
+            highlight_urls=highlight_urls or None,
+        )
+        return jsonify({"success": True, "map": payload})
+    except ValueError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+    except FileNotFoundError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 503
 
 
 @app.route("/health")

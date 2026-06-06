@@ -3,207 +3,310 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dự báo giá nhà</title>
+  <title>Dự báo giá nhà · Hà Nội</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  >
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+    crossorigin=""
+  >
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+    crossorigin=""
+  >
 </head>
 <body>
-  <div class="page">
-    <header class="hero">
-      <div class="hero-content">
-        <p class="eyebrow">Machine Learning · Nhà ở &amp; căn hộ</p>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <p class="eyebrow">Machine Learning · Thị trường Hà Nội</p>
         <h1>Dự báo giá nhà thông minh</h1>
-        <p class="subtitle">
-          Ước tính giá bán <strong>căn hộ và nhà ở</strong> dựa trên dữ liệu thị trường.
-        </p>
       </div>
+      <nav class="tab-nav" role="tablist" aria-label="Chế độ xem">
+        <button type="button" class="tab-btn is-active" data-tab="predict" role="tab" aria-selected="true" aria-controls="tab-predict">
+          <span class="tab-icon" aria-hidden="true">📊</span>
+          Dự báo giá
+        </button>
+        <button type="button" class="tab-btn" data-tab="map" role="tab" aria-selected="false" aria-controls="tab-map">
+          <span class="tab-icon" aria-hidden="true">🗺️</span>
+          Bản đồ Hà Nội
+          <span class="tab-badge" id="map-tab-badge" hidden>0</span>
+        </button>
+      </nav>
     </header>
 
-    <main class="layout-three">
-      <!-- Cột 1: Form nhập liệu -->
-      <div class="col col-form">
-        <section class="card form-card">
-          <h2>Thông tin nhà / căn hộ</h2>
-          <form id="predict-form">
-            <div class="field">
-              <label for="property_type">Loại nhà</label>
-              <select id="property_type" name="property_type" required>
-                {% for code, label in property_types.items() %}
-                <option value="{{ code }}">{{ label }}</option>
-                {% endfor %}
-              </select>
-              <small>Căn hộ chung cư, nhà riêng, biệt thự, liền kề, mặt phố — không gồm đất</small>
-            </div>
+    <!-- Tab 1: Dự báo -->
+    <section class="tab-panel is-active" id="tab-predict" role="tabpanel">
+      <p class="panel-intro">
+        Ước tính giá <strong>căn hộ và nhà ở</strong> tại Hà Nội dựa trên dữ liệu thị trường thực tế.
+      </p>
+      <main class="layout-three">
+        <div class="col col-form">
+          <section class="card form-card">
+            <h2>Thông tin nhà / căn hộ</h2>
+            <form id="predict-form">
+              <div class="field">
+                <label for="property_type">Loại nhà</label>
+                <select id="property_type" name="property_type" required>
+                  {% for code, label in property_types.items() %}
+                  <option value="{{ code }}">{{ label }}</option>
+                  {% endfor %}
+                </select>
+                <small>Căn hộ chung cư, nhà riêng, biệt thự, liền kề, mặt phố</small>
+              </div>
 
-            <div class="field region-field">
-              <label for="city-input">Khu vực / Tỉnh thành</label>
-              <div class="combobox" id="city-combobox">
-                <input
-                  type="text"
-                  id="city-input"
-                  class="combobox-input"
-                  autocomplete="off"
-                  placeholder="Gõ để tìm: Hà Nội, Đà Nẵng…"
-                  aria-autocomplete="list"
-                  aria-controls="city-panel"
-                  aria-expanded="false"
-                  role="combobox"
-                >
-                <input type="hidden" id="city" name="city" value="tp_ho_chi_minh" required>
-                <div class="combobox-panel" id="city-panel" role="listbox" hidden>
-                  <div class="combobox-scroll" id="city-list"></div>
+              <div class="field region-field">
+                <label for="city-input">Khu vực</label>
+                <div class="combobox" id="city-combobox">
+                  <input
+                    type="text"
+                    id="city-input"
+                    class="combobox-input"
+                    autocomplete="off"
+                    placeholder="Gõ để tìm khu vực…"
+                    aria-autocomplete="list"
+                    aria-controls="city-panel"
+                    aria-expanded="false"
+                    role="combobox"
+                  >
+                  <input type="hidden" id="city" name="city" value="{{ default_city }}" required>
+                  <div class="combobox-panel" id="city-panel" role="listbox" hidden>
+                    <div class="combobox-scroll" id="city-list"></div>
+                  </div>
+                </div>
+                <small>Tập trung dữ liệu tại <strong>{{ default_city_label }}</strong></small>
+              </div>
+
+              <div class="grid-2">
+                <div class="field">
+                  <label for="area_m2">Diện tích sử dụng (m²)</label>
+                  <input type="number" id="area_m2" name="area_m2" min="15" step="0.1" placeholder="VD: 75" required>
+                </div>
+                <div class="field" id="frontage-field" hidden>
+                  <label for="frontage_m">Mặt tiền (m)</label>
+                  <input type="number" id="frontage_m" name="frontage_m" min="0" step="0.1" placeholder="VD: 5">
                 </div>
               </div>
-              <!-- <small>34 tỉnh, thành — gõ vài ký tự để tìm và chọn</small> -->
+
+              <div class="grid-2">
+                <div class="field">
+                  <label for="bedrooms">Số phòng ngủ</label>
+                  <input type="number" id="bedrooms" name="bedrooms" min="0" max="6" value="2" required>
+                </div>
+                <div class="field">
+                  <label for="bathrooms">Số phòng tắm</label>
+                  <input type="number" id="bathrooms" name="bathrooms" min="1" max="4" value="2" required>
+                </div>
+              </div>
+
+              <div class="grid-2">
+                <div class="field">
+                  <label for="legal_status">Pháp lý</label>
+                  <select id="legal_status" name="legal_status" required>
+                    {% for code, label in legal_options.items() %}
+                    <option value="{{ code }}">{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="furnished_status">Nội thất</label>
+                  <select id="furnished_status" name="furnished_status" required>
+                    {% for code, label in furnished_options.items() %}
+                    <option value="{{ code }}">{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primary" id="submit-btn">
+                Dự báo giá nhà
+              </button>
+            </form>
+          </section>
+        </div>
+
+        <div class="col col-middle">
+          <section class="card result-card" id="result-card">
+            <div id="result-placeholder" class="result-placeholder">
+              <p class="result-label">Giá dự báo</p>
+              <p class="placeholder-text">Nhập thông tin bên trái và bấm <strong>Dự báo giá nhà</strong> để xem kết quả.</p>
+            </div>
+            <div id="result-body" hidden>
+              <p class="result-label">Giá dự báo</p>
+              <p class="result-price" id="result-price">—</p>
+              <p class="result-full" id="result-full"></p>
+
+              <div class="result-meta">
+                <div class="meta-item">
+                  <span>Đơn giá / m²</span>
+                  <strong id="result-unit">—</strong>
+                </div>
+                <div class="meta-item">
+                  <span>Loại nhà</span>
+                  <strong id="result-type">—</strong>
+                </div>
+                <div class="meta-item">
+                  <span>Khu vực</span>
+                  <strong id="result-city">—</strong>
+                </div>
+                <div class="meta-item">
+                  <span>Diện tích</span>
+                  <strong id="result-area">—</strong>
+                </div>
+                <div class="meta-item">
+                  <span>Phòng ngủ / tắm</span>
+                  <strong id="result-rooms">—</strong>
+                </div>
+                <div class="meta-item">
+                  <span>Pháp lý</span>
+                  <strong id="result-legal">—</strong>
+                </div>
+              </div>
+
+              <button type="button" class="btn-secondary btn-map-link" id="view-on-map-btn" hidden>
+                Xem tin tương tự trên bản đồ
+              </button>
+
+              <p class="disclaimer">
+                * Chỉ dự báo giá nhà ở &amp; căn hộ. Kết quả mang tính tham khảo.
+              </p>
+            </div>
+          </section>
+
+          <section class="card info-card">
+            <h3>Trạng thái mô hình</h3>
+            {% if model_ready %}
+            <p class="status ok">Mô hình đã sẵn sàng</p>
+            <ul class="metrics">
+              <li><span>Mẫu huấn luyện</span><strong>{{ "{:,}".format(metrics.samples) }}</strong></li>
+              <li><span>Độ chính xác R²</span><strong>{{ "%.2f"|format(metrics.r2 * 100) }}%</strong></li>
+            </ul>
+            {% else %}
+            <p class="status warn">Chưa có mô hình. Chạy lệnh: <code>python src/train.py</code></p>
+            {% endif %}
+          </section>
+        </div>
+
+        <div class="col col-links">
+          <section class="card suggestion-card">
+            <div class="reference-head">
+              <p class="section-label" id="reference-title">Tin nhà đất thị trường</p>
+              <span id="reference-count-label">—</span>
+            </div>
+            <p class="reference-subtitle" id="reference-subtitle">
+              Tin ngẫu nhiên tại Hà Nội — sau dự báo sẽ lọc theo thông số của bạn.
+            </p>
+
+            <div class="reference-panel">
+              <div id="marquee-wrap" class="reference-marquee-wrap">
+                <div id="reference-marquee" class="reference-marquee-track"></div>
+              </div>
+              <div id="matched-wrap" class="reference-list-wrap" hidden>
+                <div class="reference-list" id="reference-list"></div>
+              </div>
             </div>
 
-            <div class="grid-2">
-              <div class="field">
-                <label for="area_m2">Diện tích sử dụng (m²)</label>
-                <input type="number" id="area_m2" name="area_m2" min="15" step="0.1" placeholder="VD: 75" required>
-              </div>
-              <div class="field" id="frontage-field" hidden>
-                <label for="frontage_m">Mặt tiền (m)</label>
-                <input type="number" id="frontage_m" name="frontage_m" min="0" step="0.1" placeholder="VD: 5">
-                <!-- <small>Nhà riêng, biệt thự, liền kề, mặt phố</small> -->
-              </div>
-            </div>
-
-            <div class="grid-2">
-              <div class="field">
-                <label for="bedrooms">Số phòng ngủ</label>
-                <input type="number" id="bedrooms" name="bedrooms" min="0" max="6" value="2" required>
-              </div>
-              <div class="field">
-                <label for="bathrooms">Số phòng tắm</label>
-                <input type="number" id="bathrooms" name="bathrooms" min="1" max="4" value="2" required>
-              </div>
-            </div>
-
-            <div class="grid-2">
-              <div class="field">
-                <label for="legal_status">Pháp lý</label>
-                <select id="legal_status" name="legal_status" required>
-                  {% for code, label in legal_options.items() %}
-                  <option value="{{ code }}">{{ label }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="field">
-                <label for="furnished_status">Nội thất</label>
-                <select id="furnished_status" name="furnished_status" required>
-                  {% for code, label in furnished_options.items() %}
-                  <option value="{{ code }}">{{ label }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-            </div>
-
-            <button type="submit" class="btn-primary" id="submit-btn">
-              Dự báo giá nhà
+            <button type="button" id="toggle-references-btn" class="btn-secondary" hidden>
+              Xem thêm
             </button>
-          </form>
-        </section>
-      </div>
+          </section>
+        </div>
+      </main>
+    </section>
 
-      <!-- Cột 2: Dự báo + Trạng thái mô hình -->
-      <div class="col col-middle">
-        <section class="card result-card" id="result-card">
-          <div id="result-placeholder" class="result-placeholder">
-            <p class="result-label">Giá dự báo</p>
-            <p class="placeholder-text">Nhập thông tin bên trái và bấm <strong>Dự báo giá nhà</strong> để xem kết quả.</p>
-          </div>
-          <div id="result-body" hidden>
-            <p class="result-label">Giá dự báo</p>
-            <p class="result-price" id="result-price">—</p>
-            <p class="result-full" id="result-full"></p>
-
-            <div class="result-meta">
-              <div class="meta-item">
-                <span>Đơn giá / m²</span>
-                <strong id="result-unit">—</strong>
-              </div>
-              <div class="meta-item">
-                <span>Loại nhà</span>
-                <strong id="result-type">—</strong>
-              </div>
-              <div class="meta-item">
-                <span>Khu vực</span>
-                <strong id="result-city">—</strong>
-              </div>
-              <div class="meta-item">
-                <span>Diện tích</span>
-                <strong id="result-area">—</strong>
-              </div>
-              <div class="meta-item">
-                <span>Phòng ngủ / tắm</span>
-                <strong id="result-rooms">—</strong>
-              </div>
-              <div class="meta-item">
-                <span>Pháp lý</span>
-                <strong id="result-legal">—</strong>
-              </div>
-            </div>
-
-            <p class="disclaimer">
-              * Chỉ dự báo giá nhà ở &amp; căn hộ. Kết quả mang tính tham khảo.
+    <!-- Tab 2: Bản đồ full-screen -->
+    <section class="tab-panel" id="tab-map" role="tabpanel" hidden>
+      <div class="map-workspace">
+        <aside class="map-sidebar card">
+          <div class="map-sidebar-head">
+            <h2>Bản đồ tin đăng</h2>
+            <p class="map-subtitle" id="map-subtitle">
+              Toàn bộ tài sản có tọa độ tại Hà Nội từ dữ liệu CSV.
             </p>
           </div>
-        </section>
 
-        <section class="card info-card">
-          <h3>Trạng thái mô hình</h3>
-          {% if model_ready %}
-          <p class="status ok">Mô hình đã sẵn sàng</p>
-          <ul class="metrics">
-            <li><span>Mẫu huấn luyện</span><strong>{{ "{:,}".format(metrics.samples) }}</strong></li>
-            <li><span>Độ chính xác R²</span><strong>{{ "%.2f"|format(metrics.r2 * 100) }}%</strong></li>
-          </ul>
-          {% else %}
-          <p class="status warn">Chưa có mô hình. Chạy lệnh: <code>python src/train.py</code></p>
-          {% endif %}
-        </section>
-      </div>
-
-      <!-- Cột 3: Link tham khảo -->
-      <div class="col col-links">
-        <section class="card suggestion-card">
-          <div class="reference-head">
-            <p class="result-label" id="reference-title">Tin nhà đất thị trường</p>
-            <span id="reference-count-label">—</span>
+          <div class="field">
+            <label for="map-property-type">Lọc loại nhà</label>
+            <select id="map-property-type">
+              <option value="">Tất cả loại nhà</option>
+              {% for code, label in property_types.items() %}
+              <option value="{{ code }}">{{ label }}</option>
+              {% endfor %}
+            </select>
           </div>
-          <p class="reference-subtitle" id="reference-subtitle">
-            Dòng chảy tin ngẫu nhiên từ dữ liệu — sau khi dự báo sẽ lọc theo khu vực &amp; thông số của bạn.
-          </p>
 
-          <div class="reference-panel">
-            <div id="marquee-wrap" class="reference-marquee-wrap">
-              <div id="reference-marquee" class="reference-marquee-track"></div>
+          <div class="map-stat-grid">
+            <div class="map-stat">
+              <span>Đang hiển thị</span>
+              <strong id="map-shown-count">—</strong>
             </div>
-            <div id="matched-wrap" class="reference-list-wrap" hidden>
-              <div class="reference-list" id="reference-list"></div>
+            <div class="map-stat">
+              <span>Tổng có tọa độ</span>
+              <strong id="map-total-count">—</strong>
             </div>
           </div>
 
-          <button type="button" id="toggle-references-btn" class="btn-secondary" hidden>
-            Xem thêm
+          <div class="map-legend">
+            <p class="map-legend-title">Chú thích</p>
+            <div class="legend-row">
+              <span class="legend-dot legend-dot-default"></span>
+              <span>Tin thị trường</span>
+            </div>
+            <div class="legend-row">
+              <span class="legend-dot legend-dot-highlight"></span>
+              <span>Tin tham khảo sau dự báo</span>
+            </div>
+          </div>
+
+          <button type="button" class="btn-secondary" id="reload-map-btn">
+            Tải lại bản đồ
           </button>
-        </section>
+        </aside>
+
+        <div class="map-stage">
+          <div id="property-map" role="application" aria-label="Bản đồ tương tác Hà Nội"></div>
+          <div class="map-loading" id="map-loading" hidden>
+            <div class="map-loading-inner">
+              <div class="map-spinner"></div>
+              <p id="map-loading-text">Đang tải dữ liệu bản đồ…</p>
+            </div>
+          </div>
+        </div>
       </div>
-    </main>
+    </section>
   </div>
 
   <div class="toast" id="toast" hidden></div>
 
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+  <script
+    src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
+    crossorigin=""
+  ></script>
   <script type="application/json" id="region-groups-data">{{ region_groups | tojson }}</script>
   <script type="application/json" id="frontage-types-data">{{ frontage_types | tojson }}</script>
   <script type="application/json" id="initial-references-data">{{ initial_references | tojson }}</script>
+  <script type="application/json" id="default-city-data">{{ default_city | tojson }}</script>
   <script>
+    const DEFAULT_CITY = JSON.parse(document.getElementById("default-city-data").textContent);
     const form = document.getElementById("predict-form");
     const toast = document.getElementById("toast");
     const regionGroups = JSON.parse(document.getElementById("region-groups-data").textContent);
     const frontageTypes = JSON.parse(document.getElementById("frontage-types-data").textContent);
     const initialReferences = JSON.parse(document.getElementById("initial-references-data").textContent);
     const propertyTypeSelect = document.getElementById("property_type");
+    const mapPropertyTypeSelect = document.getElementById("map-property-type");
     const frontageField = document.getElementById("frontage-field");
     const resultPlaceholder = document.getElementById("result-placeholder");
     const resultBody = document.getElementById("result-body");
@@ -215,11 +318,28 @@
     const refTitle = document.getElementById("reference-title");
     const refSubtitle = document.getElementById("reference-subtitle");
     const toggleReferencesBtn = document.getElementById("toggle-references-btn");
+    const mapSubtitle = document.getElementById("map-subtitle");
+    const mapShownCount = document.getElementById("map-shown-count");
+    const mapTotalCount = document.getElementById("map-total-count");
+    const mapLoading = document.getElementById("map-loading");
+    const mapLoadingText = document.getElementById("map-loading-text");
+    const mapTabBadge = document.getElementById("map-tab-badge");
+    const viewOnMapBtn = document.getElementById("view-on-map-btn");
+    const reloadMapBtn = document.getElementById("reload-map-btn");
+    const tabButtons = document.querySelectorAll(".tab-btn");
+    const tabPanels = document.querySelectorAll(".tab-panel");
 
     let isSubmitting = false;
     let hasPredicted = false;
     let isExpandedReferences = false;
     let latestReferences = [];
+    let pendingHighlightUrls = [];
+    let propertyMap = null;
+    let mapCluster = null;
+    let mapLoadToken = 0;
+    let mapInitialized = false;
+    let activeTab = "predict";
+    let mapCacheKey = "";
 
     const cityInput = document.getElementById("city-input");
     const cityHidden = document.getElementById("city");
@@ -247,6 +367,40 @@
       cityHidden.value = code;
       cityInput.value = label || regionLabel(code);
     }
+
+    function switchTab(tabId) {
+      activeTab = tabId;
+      tabButtons.forEach((btn) => {
+        const isActive = btn.dataset.tab === tabId;
+        btn.classList.toggle("is-active", isActive);
+        btn.setAttribute("aria-selected", isActive ? "true" : "false");
+      });
+      tabPanels.forEach((panel) => {
+        const isActive = panel.id === `tab-${tabId}`;
+        panel.classList.toggle("is-active", isActive);
+        panel.hidden = !isActive;
+      });
+      if (tabId === "map") {
+        mapTabBadge.hidden = true;
+        ensurePropertyMap();
+        loadMapForSelection(pendingHighlightUrls, true);
+        setTimeout(() => propertyMap && propertyMap.invalidateSize(), 150);
+      }
+    }
+
+    tabButtons.forEach((btn) => {
+      btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+    });
+
+    viewOnMapBtn.addEventListener("click", () => switchTab("map"));
+    reloadMapBtn.addEventListener("click", () => {
+      mapCacheKey = "";
+      loadMapForSelection(pendingHighlightUrls, true);
+    });
+    mapPropertyTypeSelect.addEventListener("change", () => {
+      mapCacheKey = "";
+      if (activeTab === "map") loadMapForSelection(pendingHighlightUrls, true);
+    });
 
     function renderRegionList(query = "") {
       const q = stripAccents(query.trim());
@@ -319,7 +473,7 @@
       if (selected) cityInput.value = selected.name;
     }
 
-    setRegion("tp_ho_chi_minh", regionLabel("tp_ho_chi_minh"));
+    setRegion(DEFAULT_CITY, regionLabel(DEFAULT_CITY));
 
     cityInput.addEventListener("focus", openRegionPanel);
     cityInput.addEventListener("input", () => {
@@ -354,21 +508,15 @@
       const fallback = createRefFallback(ref.domain);
       media.appendChild(fallback);
 
-      if (!ref.url) {
-        return media;
-      }
+      if (!ref.url) return media;
 
       const img = document.createElement("img");
       img.alt = ref.title || "Tin tham khảo";
       img.loading = "eager";
       img.decoding = "async";
       img.src = listingProxySrc(ref.url);
-      img.onload = () => {
-        fallback.remove();
-      };
-      img.onerror = () => {
-        img.remove();
-      };
+      img.onload = () => fallback.remove();
+      img.onerror = () => img.remove();
       media.appendChild(img);
       return media;
     }
@@ -376,13 +524,175 @@
     function toggleFrontageField() {
       const showFrontage = frontageTypes.includes(propertyTypeSelect.value);
       frontageField.hidden = !showFrontage;
-      if (!showFrontage) {
-        form.elements.frontage_m.value = "";
-      }
+      if (!showFrontage) form.elements.frontage_m.value = "";
     }
 
     propertyTypeSelect.addEventListener("change", toggleFrontageField);
     toggleFrontageField();
+
+    function escapeHtml(text) {
+      return String(text || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function ensurePropertyMap() {
+      if (propertyMap) return propertyMap;
+      propertyMap = L.map("property-map", {
+        zoomControl: true,
+        scrollWheelZoom: true,
+        preferCanvas: true,
+      });
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; CARTO',
+        subdomains: "abcd",
+        maxZoom: 19,
+      }).addTo(propertyMap);
+      mapCluster = L.markerClusterGroup({
+        showCoverageOnHover: false,
+        maxClusterRadius: 46,
+        spiderfyOnMaxZoom: true,
+        chunkedLoading: true,
+        chunkInterval: 40,
+        chunkDelay: 8,
+        disableClusteringAtZoom: 16,
+      });
+      propertyMap.addLayer(mapCluster);
+      propertyMap.setView([21.0285, 105.8542], 11);
+      mapInitialized = true;
+      return propertyMap;
+    }
+
+    function buildMapPopup(point) {
+      const link = point.url
+        ? `<a href="${escapeHtml(point.url)}" target="_blank" rel="noopener noreferrer">Xem tin đăng</a>`
+        : "";
+      return `
+        <div class="map-popup">
+          <strong>${escapeHtml(point.title || "Tin đăng")}</strong>
+          <p>${escapeHtml(point.price_short || "—")} · ${escapeHtml(String(point.area_m2 || "?"))} m²</p>
+          ${link}
+        </div>
+      `;
+    }
+
+    function createMapMarker(point) {
+      const isHighlight = !!point.highlight;
+      const marker = L.circleMarker([point.lat, point.lng], {
+        radius: isHighlight ? 8 : 5,
+        color: isHighlight ? "#fbbf24" : "#67e8f9",
+        weight: isHighlight ? 3 : 1.5,
+        fillColor: isHighlight ? "#f59e0b" : "#3b82f6",
+        fillOpacity: isHighlight ? 0.95 : 0.75,
+      });
+      marker.bindPopup(buildMapPopup(point));
+      return marker;
+    }
+
+    function renderMapPoints(payload, highlightMode = false) {
+      ensurePropertyMap();
+      mapCluster.clearLayers();
+
+      const points = Array.isArray(payload.points) ? payload.points : [];
+      const total = points.length;
+      let index = 0;
+      const chunkSize = 600;
+
+      function addChunk() {
+        const end = Math.min(index + chunkSize, total);
+        const batch = [];
+        for (let i = index; i < end; i += 1) {
+          batch.push(createMapMarker(points[i]));
+        }
+        mapCluster.addLayers(batch);
+        index = end;
+
+        if (index < total) {
+          mapLoadingText.textContent = `Đang vẽ bản đồ… ${index.toLocaleString("vi-VN")} / ${total.toLocaleString("vi-VN")}`;
+          requestAnimationFrame(addChunk);
+          return;
+        }
+
+        mapLoading.hidden = true;
+
+        if (payload.bounds && total > 1) {
+          const b = payload.bounds;
+          propertyMap.fitBounds(
+            [[b.south, b.west], [b.north, b.east]],
+            { padding: [32, 32], maxZoom: 14 }
+          );
+        } else if (payload.center) {
+          propertyMap.setView([payload.center.lat, payload.center.lng], total ? 11 : 10);
+        }
+
+        mapShownCount.textContent = (payload.shown || total).toLocaleString("vi-VN");
+        mapTotalCount.textContent = (payload.total_in_city || total).toLocaleString("vi-VN");
+
+        if (highlightMode) {
+          mapSubtitle.textContent =
+            "Điểm vàng: tin tham khảo sau dự báo. Điểm xanh: toàn bộ tin có tọa độ trong CSV.";
+        } else {
+          mapSubtitle.textContent =
+            `Hiển thị ${(payload.shown || total).toLocaleString("vi-VN")} tài sản có tọa độ tại ${payload.city_label || regionLabel(cityHidden.value)}.`;
+        }
+
+        setTimeout(() => propertyMap.invalidateSize(), 80);
+      }
+
+      if (!total) {
+        mapLoading.hidden = true;
+        mapShownCount.textContent = "0";
+        mapTotalCount.textContent = "0";
+        if (payload.center) {
+          propertyMap.setView([payload.center.lat, payload.center.lng], 10);
+        }
+        return;
+      }
+
+      mapLoading.hidden = false;
+      mapLoadingText.textContent = `Đang vẽ bản đồ… 0 / ${total.toLocaleString("vi-VN")}`;
+      requestAnimationFrame(addChunk);
+    }
+
+    async function loadMapForSelection(highlightUrls = [], force = false) {
+      const city = cityHidden.value || DEFAULT_CITY;
+      const propertyType = mapPropertyTypeSelect.value || propertyTypeSelect.value;
+      const cacheKey = `${city}|${propertyType}|${highlightUrls.join("|")}|all`;
+
+      if (!force && cacheKey === mapCacheKey && mapInitialized) return;
+
+      const token = ++mapLoadToken;
+      mapLoading.hidden = false;
+      mapLoadingText.textContent = "Đang tải dữ liệu từ CSV…";
+
+      const params = new URLSearchParams({
+        city,
+        all: "1",
+      });
+      if (propertyType) params.set("property_type", propertyType);
+      if (highlightUrls.length) params.set("highlight_urls", highlightUrls.join(","));
+
+      try {
+        const response = await fetch(`/api/map/points?${params.toString()}`);
+        const data = await response.json();
+        if (token !== mapLoadToken) return;
+        if (!data.success) {
+          mapLoading.hidden = true;
+          mapShownCount.textContent = "—";
+          showToast(data.error || "Không tải được bản đồ.");
+          return;
+        }
+        mapCacheKey = cacheKey;
+        renderMapPoints(data.map, highlightUrls.length > 0);
+      } catch (error) {
+        if (token === mapLoadToken) {
+          mapLoading.hidden = true;
+          showToast("Lỗi tải bản đồ. Vui lòng thử lại.");
+        }
+      }
+    }
 
     function showToast(message) {
       toast.textContent = message;
@@ -401,7 +711,6 @@
       a.rel = "noopener noreferrer";
 
       const media = buildRefMedia(ref);
-
       const content = document.createElement("div");
       content.className = "ref-content";
       const title = document.createElement("h4");
@@ -428,8 +737,9 @@
       marqueeWrap.hidden = false;
       matchedWrap.hidden = true;
       toggleReferencesBtn.hidden = true;
+      viewOnMapBtn.hidden = true;
       refTitle.textContent = "Tin nhà đất thị trường";
-      refSubtitle.textContent = "";
+      refSubtitle.textContent = "Tin ngẫu nhiên tại Hà Nội từ dữ liệu thị trường.";
       refCountLabel.textContent = "";
 
       refMarquee.innerHTML = "";
@@ -446,8 +756,7 @@
         seenUrls.add(ref.url);
         return true;
       });
-      const doubled = uniqueRefs.concat(uniqueRefs);
-      doubled.forEach((ref) => trackInner.appendChild(buildRefCard(ref, null)));
+      uniqueRefs.concat(uniqueRefs).forEach((ref) => trackInner.appendChild(buildRefCard(ref, null)));
       refMarquee.appendChild(trackInner);
     }
 
@@ -469,6 +778,7 @@
         empty.textContent = "Chưa tìm thấy tin tương tự trong khu vực này.";
         refList.appendChild(empty);
         toggleReferencesBtn.hidden = true;
+        viewOnMapBtn.hidden = true;
         return;
       }
 
@@ -480,6 +790,7 @@
       } else {
         toggleReferencesBtn.hidden = true;
       }
+      viewOnMapBtn.hidden = false;
     }
 
     toggleReferencesBtn.addEventListener("click", () => {
@@ -488,6 +799,10 @@
     });
 
     renderMarquee(Array.isArray(initialReferences) ? initialReferences : []);
+
+    window.addEventListener("resize", () => {
+      if (propertyMap) propertyMap.invalidateSize();
+    });
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -542,6 +857,21 @@
         latestReferences = Array.isArray(r.references) ? r.references.slice(0, 10) : [];
         isExpandedReferences = false;
         renderMatchedReferences(latestReferences, false);
+
+        pendingHighlightUrls = latestReferences
+          .map((ref) => ref.url)
+          .filter((url) => typeof url === "string" && url.startsWith("http"));
+        mapCacheKey = "";
+        mapPropertyTypeSelect.value = form.elements.property_type.value;
+
+        if (pendingHighlightUrls.length) {
+          mapTabBadge.textContent = String(pendingHighlightUrls.length);
+          mapTabBadge.hidden = false;
+        }
+
+        if (activeTab === "map") {
+          loadMapForSelection(pendingHighlightUrls, true);
+        }
       } catch (error) {
         showToast("Lỗi kết nối. Vui lòng thử lại.");
       } finally {

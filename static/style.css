@@ -1,16 +1,20 @@
 :root {
-  --bg: #0f1419;
-  --surface: #1a2332;
-  --surface-2: #243044;
+  --bg: #0a0e14;
+  --surface: #141b26;
+  --surface-2: #1c2636;
+  --surface-3: #243044;
   --text: #e8edf5;
   --muted: #94a3b8;
   --accent: #3b82f6;
   --accent-2: #06b6d4;
+  --hanoi: #e85d4c;
+  --hanoi-soft: rgba(232, 93, 76, 0.15);
   --success: #22c55e;
   --warn: #f59e0b;
   --border: rgba(255, 255, 255, 0.08);
   --shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
   --radius: 16px;
+  --topbar-h: 88px;
 }
 
 * {
@@ -30,54 +34,141 @@ body {
 body {
   margin: 0;
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-  background: radial-gradient(circle at top, #1e293b 0%, var(--bg) 45%);
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(232, 93, 76, 0.12), transparent 55%),
+    radial-gradient(circle at top, #1a2433 0%, var(--bg) 50%);
   color: var(--text);
 }
 
-.page {
-  max-width: 1320px;
+/* Shell + topbar */
+.app-shell {
   height: 100vh;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 16px 24px 20px;
+  padding: 14px 20px 16px;
   display: flex;
   flex-direction: column;
   min-height: 0;
+  gap: 12px;
 }
 
-.hero {
-  padding: 20px 0 16px;
+.topbar {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 4px;
+}
+
+.brand h1 {
+  font-size: clamp(1.25rem, 2.5vw, 1.65rem);
+  margin: 2px 0 0;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .eyebrow {
-  color: var(--accent-2);
-  font-size: 0.85rem;
-  letter-spacing: 0.08em;
+  color: var(--hanoi);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  margin: 0 0 8px;
-}
-
-.hero h1 {
-  font-size: clamp(1.6rem, 4vw, 2.4rem);
-  margin: 0 0 8px;
-  line-height: 1.1;
-}
-
-.subtitle {
-  color: var(--muted);
-  max-width: 720px;
-  line-height: 1.5;
   margin: 0;
-  font-size: 1.95rem;
+  font-weight: 700;
 }
 
-/* 3 cột chính */
+.tab-nav {
+  display: flex;
+  gap: 8px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  white-space: nowrap;
+}
+
+.tab-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn.is-active {
+  color: white;
+  background: linear-gradient(135deg, var(--accent), #2563eb);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
+}
+
+.tab-btn.is-active[data-tab="map"] {
+  background: linear-gradient(135deg, var(--hanoi), #c2410c);
+  box-shadow: 0 8px 24px rgba(232, 93, 76, 0.35);
+}
+
+.tab-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.tab-badge {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #fbbf24;
+  color: #1e1b4b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  display: inline-grid;
+  place-items: center;
+}
+
+/* Tab panels */
+.tab-panel {
+  flex: 1;
+  min-height: 0;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tab-panel.is-active {
+  display: flex;
+}
+
+.panel-intro {
+  flex-shrink: 0;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.panel-intro strong {
+  color: #dbeafe;
+}
+
+/* Predict layout */
 .layout-three {
   flex: 1;
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(280px, 1fr) minmax(260px, 0.95fr) minmax(300px, 1.05fr);
-  gap: 16px;
+  gap: 14px;
   align-items: stretch;
 }
 
@@ -85,7 +176,7 @@ body {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .col-form .form-card {
@@ -96,7 +187,7 @@ body {
 }
 
 .col-middle {
-  gap: 14px;
+  gap: 12px;
 }
 
 .col-middle .result-card {
@@ -115,6 +206,159 @@ body {
   min-height: 0;
 }
 
+/* Map workspace */
+.map-workspace {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(240px, 280px) 1fr;
+  gap: 14px;
+}
+
+.map-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.map-sidebar-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.map-subtitle {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.map-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.map-stat {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.map-stat span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  margin-bottom: 4px;
+}
+
+.map-stat strong {
+  font-size: 1.05rem;
+  color: var(--accent-2);
+}
+
+.map-legend {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+}
+
+.map-legend-title {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.legend-row:last-child {
+  margin-bottom: 0;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-dot-default {
+  background: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(103, 232, 249, 0.5);
+}
+
+.legend-dot-highlight {
+  background: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.6);
+}
+
+.map-stage {
+  position: relative;
+  min-height: 0;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  background: #0b1220;
+}
+
+#property-map {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  z-index: 0;
+}
+
+.map-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 500;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 14, 20, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.map-loading-inner {
+  text-align: center;
+  padding: 20px;
+}
+
+.map-spinner {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto 12px;
+  border: 3px solid rgba(255, 255, 255, 0.12);
+  border-top-color: var(--accent-2);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+#map-loading-text {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
 @media (max-width: 1100px) {
   html,
   body {
@@ -122,13 +366,38 @@ body {
     overflow: auto;
   }
 
-  .page {
+  .app-shell {
     height: auto;
     min-height: 100vh;
   }
 
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tab-nav {
+    width: 100%;
+  }
+
+  .tab-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+
   .layout-three {
     grid-template-columns: 1fr;
+  }
+
+  .map-workspace {
+    grid-template-columns: 1fr;
+    min-height: 60vh;
+  }
+
+  .map-stage {
+    min-height: 420px;
   }
 
   .col-form .form-card,
@@ -137,8 +406,15 @@ body {
   }
 }
 
+@media (max-width: 600px) {
+  .tab-icon {
+    display: none;
+  }
+}
+
+/* Cards & form */
 .card {
-  background: linear-gradient(180deg, var(--surface) 0%, #151d29 100%);
+  background: linear-gradient(180deg, var(--surface) 0%, #101722 100%);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px;
@@ -178,7 +454,6 @@ select {
   font-size: 0.95rem;
 }
 
-/* Ẩn mũi tên lên/xuống của input number */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -196,7 +471,6 @@ select:focus {
   border-color: var(--accent);
 }
 
-/* Combobox tỉnh/thành */
 .region-field {
   position: relative;
 }
@@ -319,10 +593,14 @@ select:focus {
   margin: 8px 0 0;
 }
 
+.section-label,
 .result-label {
   color: var(--muted);
   margin: 0 0 4px;
-  font-size: 2.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .result-price {
@@ -362,6 +640,10 @@ select:focus {
   font-size: 0.9rem;
 }
 
+.btn-map-link {
+  margin-top: 12px;
+}
+
 .disclaimer {
   margin: 12px 0 0;
   color: var(--muted);
@@ -369,7 +651,6 @@ select:focus {
   line-height: 1.45;
 }
 
-/* Cột 3: gợi ý link */
 .suggestion-card {
   display: flex;
   flex-direction: column;
@@ -394,7 +675,7 @@ select:focus {
 .reference-subtitle {
   margin: 0;
   color: var(--muted);
-  font-size: .8rem;
+  font-size: 0.8rem;
   line-height: 1.4;
   flex-shrink: 0;
 }
@@ -408,7 +689,6 @@ select:focus {
   background: rgba(0, 0, 0, 0.15);
 }
 
-/* Marquee trước khi dự báo */
 .reference-marquee-wrap {
   height: 100%;
   overflow: hidden;
@@ -439,15 +719,10 @@ select:focus {
 }
 
 @keyframes marquee-flow {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(-50%);
-  }
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
 }
 
-/* Danh sách sau dự báo — scroll trong cột */
 .reference-list-wrap {
   height: 100%;
   overflow-y: auto;
@@ -568,6 +843,7 @@ select:focus {
   font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
 .btn-secondary:hover {
@@ -626,5 +902,54 @@ code {
   border-radius: 10px;
   box-shadow: var(--shadow);
   max-width: 320px;
-  z-index: 100;
+  z-index: 1000;
+}
+
+.map-popup {
+  color: #0f172a;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  min-width: 180px;
+}
+
+.map-popup strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.map-popup p {
+  margin: 0 0 6px;
+}
+
+.map-popup a {
+  color: #1d4ed8;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.map-popup a:hover {
+  text-decoration: underline;
+}
+
+.leaflet-container {
+  font-family: inherit;
+  background: #0b1220;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 10px;
+}
+
+.marker-cluster-small,
+.marker-cluster-medium,
+.marker-cluster-large {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.marker-cluster-small div,
+.marker-cluster-medium div,
+.marker-cluster-large div {
+  background: rgba(37, 99, 235, 0.88);
+  color: white;
+  font-weight: 700;
 }
